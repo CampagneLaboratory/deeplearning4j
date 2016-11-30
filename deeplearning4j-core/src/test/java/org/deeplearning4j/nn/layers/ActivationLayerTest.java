@@ -18,6 +18,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -172,9 +173,83 @@ public class ActivationLayerTest {
 
         assertEquals(activations.get(1).reshape(activations2.get(2).shape()), activations2.get(2));
         assertEquals(activations.get(2), activations2.get(3));
-
-
     }
+
+    @Test
+    public void testAutoEncoderActivationLayer2() throws Exception {
+
+        for (int j = 0; j < 100; j++) {
+            System.out.println("////////////////////////////////////////////////////////");
+            int minibatch = 3;
+            int nIn = 5;
+            int layerSize = 5;
+            int nOut = 3;
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray next = Nd4j.rand(new int[]{minibatch, nIn});
+            INDArray labels = Nd4j.zeros(minibatch, nOut);
+            for (int i = 0; i < minibatch; i++) {
+                labels.putScalar(i, i % nOut, 1.0);
+            }
+
+            // Run without separate activation layer
+            Nd4j.getRandom().setSeed(123);
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .iterations(1)
+                    .seed(123)
+                    .weightInit(WeightInit.XAVIER)
+                    .list()
+                    .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation("sigmoid").build())
+                    .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(layerSize).nOut(nOut).build())
+                    .backprop(true).pretrain(false)
+                    .build();
+
+            MultiLayerNetwork network = new MultiLayerNetwork(conf.clone());
+            network.init();
+            INDArray temp0 = network.getLayer(0).getParam("W").dup();
+            INDArray out0 = network.output(next);
+            List<INDArray> list = network.feedForward(next);
+
+            // Run with separate activation layer
+            Nd4j.getRandom().setSeed(123);
+            MultiLayerNetwork network2 = new MultiLayerNetwork(conf.clone());
+            network2.init();
+            INDArray out1 = network2.output(next);
+            List<INDArray> list2 = network2.feedForward(next);
+            INDArray temp1 = network2.getLayer(0).getParam("W").dup();
+
+//            System.out.println("-----------");
+//            System.out.println("Initial parameters:");
+//            System.out.println(Arrays.toString(temp0.data().asFloat()));
+//            System.out.println(Arrays.toString(temp1.data().asFloat()));
+//            System.out.println("-----------");
+            System.out.println("Forward pass output:");
+            System.out.println("-----");
+//            System.out.println(Arrays.toString(out0.data().asFloat()));
+//            System.out.println(Arrays.toString(out1.data().asFloat()));
+            for (int i = 1; i < list.size(); i++) {
+//            System.out.println(Arrays.toString(out0.data().asFloat()));
+//            System.out.println(Arrays.toString(out1.data().asFloat()));
+                System.out.println(Arrays.toString(list.get(i).data().asFloat()));
+                System.out.println(Arrays.toString(list2.get(i).data().asFloat()));
+            }
+
+            System.out.println("...");
+            INDArray in = list.get(1);
+            System.out.println(Arrays.toString(network.getLayer(1).activate(in).data().asFloat()));
+            System.out.println(Arrays.toString(network2.getLayer(1).activate(in).data().asFloat()));
+
+            System.out.println("PARAMS:");
+            System.out.println(Arrays.toString(network.params().data().asFloat()));
+            System.out.println(Arrays.toString(network2.params().data().asFloat()));
+            System.out.println(network.params().length());
+            assertEquals(network.params(), network2.params());
+
+//            if(!Arrays.equals(out0.data().asFloat(), out1.data().asFloat())) throw new RuntimeException();
+        }
+    }
+
     @Test
     public void testCNNActivationLayer() throws Exception {
         DataSetIterator iter = new MnistDataSetIterator(2, 2);
