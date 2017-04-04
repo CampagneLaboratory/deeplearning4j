@@ -49,13 +49,14 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        this.useLayerNormalization=builder.useLayerNormalization;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
+                new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -129,8 +130,22 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
         private double forgetGateBiasInit = 1.0;
         private IActivation gateActivationFn = new ActivationSigmoid();
+        protected boolean useLayerNormalization = false;
 
-        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
+        /**
+         * Use layer normalization, as described in https://arxiv.org/pdf/1607.06450.pdf. This can substantially speed
+         * up training.
+         *
+         * @param useLayerNormalization
+         * @return A Builder (for chain configuration)
+         */
+        public BaseRecurrentLayer.Builder setUseLayerNormalization(boolean useLayerNormalization) {
+            this.useLayerNormalization = useLayerNormalization;
+            return this;
+        }
+
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially
          * help with learning or longer-term dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit) {

@@ -50,14 +50,15 @@ public class GravesLSTM extends BaseRecurrentLayer {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        this.useLayerNormalization=builder.useLayerNormalization;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("GravesLSTM", getLayerName(), layerIndex, getNIn(), getNOut());
         org.deeplearning4j.nn.layers.recurrent.GravesLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
+                new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -123,13 +124,29 @@ public class GravesLSTM extends BaseRecurrentLayer {
         private double forgetGateBiasInit = 1.0;
         private IActivation gateActivationFn = new ActivationSigmoid();
 
-        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
+        protected boolean useLayerNormalization = false;
+
+        /**
+         * Use layer normalization, as described in https://arxiv.org/pdf/1607.06450.pdf. This can substantially speed
+         * up training.
+         *
+         * @param useLayerNormalization
+         * @return A Builder (for chain configuration)
+         */
+        public BaseRecurrentLayer.Builder setUseLayerNormalization(boolean useLayerNormalization) {
+            this.useLayerNormalization = useLayerNormalization;
+            return this;
+        }
+
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially
          * help with learning or longer-term dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit) {
             this.forgetGateBiasInit = biasInit;
             return this;
         }
+
 
         /**
          * Activation function for the LSTM gates.
