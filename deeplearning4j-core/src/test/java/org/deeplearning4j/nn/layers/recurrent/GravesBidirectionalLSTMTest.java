@@ -145,15 +145,7 @@ public class GravesBidirectionalLSTMTest {
     }
 
     @Test
-    public void testGravesBidirectionalLSTMForwardPassHelperDefault() throws Exception {
-        testGravesBidirectionalLSTMForwardPassHelper(false);
-    }
-    @Test
-    public void testGravesBidirectionalLSTMForwardPassHelperAllWithLayerNormalization() throws Exception {
-        testGravesBidirectionalLSTMForwardPassHelper(true);
-    }
-
-    public void testGravesBidirectionalLSTMForwardPassHelper(boolean useLayerNormalization) throws Exception {
+    public void testGravesBidirectionalLSTMForwardPassHelper() throws Exception {
         //GravesBidirectionalLSTM.activateHelper() has different behaviour (due to optimizations) when forBackprop==true vs false
         //But should otherwise provide identical activations
         Nd4j.getRandom().setSeed(12345);
@@ -177,14 +169,13 @@ public class GravesBidirectionalLSTMTest {
         lstm.setInput(input);
 
 
-        LayerNormalization layerNormalization=useLayerNormalization?new LayerNormalizationWholeMinibatch() : new NoNormalization();
         final INDArray fwdPassFalse = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
                         lstm.input(),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
                         false, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
-                        null,layerNormalization).fwdPassOutput;
+                        null).fwdPassOutput;
 
         final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
                         lstm.input(),
@@ -192,7 +183,7 @@ public class GravesBidirectionalLSTMTest {
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
                         true, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
-                        null,layerNormalization).fwdPassOutputAsArrays;
+                        null).fwdPassOutputAsArrays;
 
         //I have no idea what the heck this does --Ben
         for (int i = 0; i < timeSeriesLength; i++) {
